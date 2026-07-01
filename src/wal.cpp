@@ -3,8 +3,8 @@
 
 #include "wal.h"
 
-WAL::WAL() {
-    log_file.open("data/wal.log", std::ios::app);
+WAL::WAL(const std::string& filepath) : filepath(filepath) {
+    log_file.open(filepath, std::ios::app | std::ios::binary);
 }
 
 void WAL::append(const Operation& op) {
@@ -21,10 +21,12 @@ std::vector<Operation> WAL::recover() {
 
     log_file.close();
 
-    std::ifstream input("data/wal.log");
+    std::ifstream input(filepath, std::ios::binary);
     std::string line;
 
     while (std::getline(input, line)) {
+        if (line.empty()) continue;
+        
         std::stringstream ss(line);
 
         std::string command;
@@ -46,7 +48,7 @@ std::vector<Operation> WAL::recover() {
 
     input.close();
 
-    log_file.open("data/wal.log", std::ios::app);
+    log_file.open(filepath, std::ios::app | std::ios::binary);
 
     return operations;
 }
@@ -54,8 +56,8 @@ std::vector<Operation> WAL::recover() {
 void WAL::clear() {
     log_file.close();
 
-    std::ofstream file("data/wal.log", std::ios::trunc);
+    std::ofstream file(filepath, std::ios::trunc | std::ios::binary);
     file.close();
 
-    log_file.open("data/wal.log", std::ios::app);
+    log_file.open(filepath, std::ios::app | std::ios::binary);
 }

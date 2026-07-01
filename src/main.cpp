@@ -1,79 +1,64 @@
 #include <iostream>
 #include "db.h"
 
-int main() {
+void run_compaction_session() {
+    std::cout << "=== SESSION 1: Writing Data to Trigger Compaction ===\n";
     PebbleDB db;
 
+    // Batch 1 -> Will flush to sst_1.dat
+    std::cout << "\nWriting Batch 1...\n";
     db.put("k1", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
     db.put("k2", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
     db.put("k3", "cccccccccccccccccccccccccccccc");
-    db.put("k4", "dddddddddddddddddddddddddddddd");
+    db.put("k4", "dddddddddddddddddddddddddddddd"); // triggers flush
 
+    // Batch 2 -> Will flush to sst_2.dat
+    std::cout << "\nWriting Batch 2...\n";
     db.put("k5", "eeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
     db.put("k6", "ffffffffffffffffffffffffffffff");
     db.put("k7", "gggggggggggggggggggggggggggggg");
-    db.put("k8", "hhhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
+    db.put("k8", "hhhhhhhhhhhhhhhhhhhhhhhhhhhhhh"); // triggers flush
 
+    // Batch 3 -> Will flush to sst_3.dat
+    std::cout << "\nWriting Batch 3...\n";
     db.put("k9", "iiiiiiiiiiiiiiiiiiiiiiiiiiiiii");
     db.put("k10", "jjjjjjjjjjjjjjjjjjjjjjjjjjjjj");
     db.put("k11", "kkkkkkkkkkkkkkkkkkkkkkkkkkkkk");
-    db.put("k12", "lllllllllllllllllllllllllllll");
+    db.put("k12", "lllllllllllllllllllllllllllll"); // triggers flush
 
-    std::cout << "\n--- Verifying SSTable Reads ---\n";
+    // Batch 4 -> Will flush to sst_4.dat, which triggers compaction!
+    std::cout << "\nWriting Batch 4...\n";
+    db.put("k13", "mmmmmmmmmmmmmmmmmmmmmmmmmmmmm");
+    db.put("k14", "nnnnnnnnnnnnnnnnnnnnnnnnnnnnn");
+    db.put("k15", "ooooooooooooooooooooooooooooo");
+    db.put("k16", "ppppppppppppppppppppppppppppp"); // triggers flush & compaction
+
+    std::cout << "\nSession 1 complete. Database closing.\n\n";
+}
+
+void run_verification_session() {
+    std::cout << "=== SESSION 2: Recovery and Read Verification ===\n";
+    PebbleDB db;
+
     Entry result;
 
-    // Test 1: Query "k2" (should be in sst_1.dat)
-    if (db.get("k2", result)) {
-        if (result.deleted) {
-            std::cout << "k2 found but marked DELETED\n";
+    std::cout << "\nReading Keys:\n";
+
+    // Test reading keys from all original 4 batches (which are now inside sst_5.dat)
+    std::vector<std::string> keys_to_test = {"k2", "k7", "k11", "k15", "k100"};
+    for (const auto& key : keys_to_test) {
+        if (db.get(key, result)) {
+            std::cout << "  Key '" << key << "' found: " << result.value << "\n";
         } else {
-            std::cout << "k2 found: " << result.value << "\n";
+            std::cout << "  Key '" << key << "' NOT found (Correct for non-existent keys)\n";
         }
-    } else {
-        std::cout << "k2 NOT found\n";
     }
 
-    // Test 2: Query "k6" (should be in sst_2.dat)
-    if (db.get("k6", result)) {
-        if (result.deleted) {
-            std::cout << "k6 found but marked DELETED\n";
-        } else {
-            std::cout << "k6 found: " << result.value << "\n";
-        }
-    } else {
-        std::cout << "k6 NOT found\n";
-    }
+    std::cout << "Session 2 complete.\n";
+}
 
-    // Test 3: Query "k11" (should be in sst_3.dat)
-    if (db.get("k11", result)) {
-        if (result.deleted) {
-            std::cout << "k11 found but marked DELETED\n";
-        } else {
-            std::cout << "k11 found: " << result.value << "\n";
-        }
-    } else {
-        std::cout << "k11 NOT found\n";
-    }
-
-    // Test 4: Query "k100" (should NOT exist)
-    if (db.get("k100", result)) {
-        std::cout << "k100 found unexpectedly!\n";
-    } else {
-        std::cout << "k100 NOT found (Correct)\n";
-    }
-
-    // Test 5: Delete "k6", and verify we can't get it anymore
-    std::cout << "\n--- Verifying Deletes ---\n";
-    db.remove("k6"); // This goes to memtable
-    if (db.get("k6", result)) {
-        if (result.deleted) {
-            std::cout << "k6 is now correctly marked DELETED\n";
-        } else {
-            std::cout << "k6 found with value: " << result.value << " (Failed)\n";
-        }
-    } else {
-        std::cout << "k6 NOT found\n";
-    }
-
+int main() {
+    run_compaction_session();
+    run_verification_session();
     return 0;
 }

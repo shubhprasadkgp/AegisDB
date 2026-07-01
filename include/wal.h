@@ -17,7 +17,7 @@ struct Operation {
 
 class WAL {
 public:
-    WAL();
+    WAL(const std::string& filepath);
 
     void append(const Operation& op);
 
@@ -25,6 +25,9 @@ public:
 
     void clear();
 
+    std::string getFilepath() const { return filepath; }
+
 private:
+    std::string filepath;
     std::ofstream log_file;
 };
