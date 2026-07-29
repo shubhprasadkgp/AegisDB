@@ -82,4 +82,4 @@ Building this engine from the ground up provided deep, hands-on experience with:
 * Implementing probabilistic data structures (Bloom Filters) in a real-world scenario.
 
 ---
-*Created as an independent systems engineering project by [Shubh Prasad](https://github.com/yourusername).*
+*Created as an independent systems engineering project by [Shubh Prasad](https://github.com/shubhprasadkgp).*
