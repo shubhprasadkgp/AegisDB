@@ -1,4 +1,4 @@
-# AegisDB (formerly PebbleDB) 🛡️
+# AegisDB 🛡️
 
 AegisDB is a high-performance, embedded Log-Structured Merge-Tree (LSM) key-value storage engine written from scratch in modern C++17. 
 
